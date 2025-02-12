@@ -1,0 +1,1117 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Project Portfolio Dashboard</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.7.0/chart.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/chartjs-plugin-annotation/1.4.0/chartjs-plugin-annotation.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f4f4f4;
+            color: #333;
+            transition: background-color 0.3s, color 0.3s;
+        }
+
+        body.dark-mode {
+            background-color: #121212;
+            color: #ffffff;
+        }
+
+        .dashboard {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            grid-template-rows: auto auto auto;
+            gap: 20px;
+        }
+
+        .card {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+        }
+
+        .dark-mode .card {
+            background-color: #1e1e1e;
+            color: #ffffff;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+        }
+
+        h1,
+        h2 {
+            color: #2c3e50;
+        }
+
+        .dark-mode h1,
+        .dark-mode h2 {
+            color: #ffffff;
+        }
+
+        .filter-section {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding: 15px;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .dark-mode .filter-section {
+            background-color: #1e1e1e;
+        }
+
+        .filter-container {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        select,
+        input {
+            padding: 10px;
+            border-radius: 6px;
+            border: 1px solid #ddd;
+            transition: all 0.3s ease;
+        }
+
+        .dark-mode select,
+        .dark-mode input {
+            background-color: #333;
+            color: #ffffff;
+            border-color: #555;
+        }
+
+        select:focus,
+        input:focus {
+            outline: none;
+            border-color: #3498db;
+            box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.2);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+
+        th,
+        td {
+            border: 1px solid #e0e0e0;
+            padding: 12px;
+            text-align: left;
+            transition: background-color 0.2s;
+        }
+
+        .dark-mode th,
+        .dark-mode td {
+            border-color: #333;
+        }
+
+        th {
+            background-color: #f8f9fa;
+            font-weight: 600;
+            color: #2c3e50;
+        }
+
+        .dark-mode th {
+            background-color: #333;
+            color: #ffffff;
+        }
+
+        tr:nth-child(even) {
+            background-color: #f2f2f2;
+        }
+
+        .dark-mode tr:nth-child(even) {
+            background-color: #333;
+        }
+
+        tr:hover {
+            background-color: #e6f2ff;
+        }
+
+        .dark-mode tr:hover {
+            background-color: #444;
+        }
+
+        .spi-status {
+            display: inline-block;
+            padding: 5px 10px;
+            border-radius: 4px;
+            font-weight: bold;
+        }
+
+        .spi-good {
+            background-color: #4CAF50;
+            color: white;
+        }
+
+        .dark-mode .spi-good {
+            background-color: #388E3C;
+        }
+
+        .spi-warning {
+            background-color: #FFC107;
+            color: black;
+        }
+
+        .dark-mode .spi-warning {
+            background-color: #FFA000;
+        }
+
+        .spi-critical {
+            background-color: #F44336;
+            color: white;
+        }
+
+        .dark-mode .spi-critical {
+            background-color: #D32F2F;
+        }
+
+        #exportBtn,
+        #exportPdfBtn,
+        #resetFilters,
+        #toggleDarkMode {
+            background-color: #3498db;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        #exportBtn:hover,
+        #exportPdfBtn:hover,
+        #resetFilters:hover,
+        #toggleDarkMode:hover {
+            background-color: #2980b9;
+        }
+
+        #spiChartContainer,
+        #progressChartContainer,
+        #pieChartContainer {
+            height: 400px;
+            position: relative;
+        }
+
+        .kpi-section {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .kpi-card {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            flex: 1;
+            text-align: center;
+        }
+
+        .dark-mode .kpi-card {
+            background-color: #1e1e1e;
+        }
+
+        .loader {
+            border: 5px solid #f3f3f3;
+            border-top: 5px solid #3498db;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        #loading {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+    </style>
+</head>
+
+<body>
+    <h1>📊 Project Portfolio Dashboard</h1>
+
+    <div class="filter-section">
+        <div class="filter-container">
+            <label for="pmFilter">Filter by Project Manager:</label>
+            <select id="pmFilter">
+                <option value="all">All Managers</option>
+                <option value="ARY">ARY</option>
+                <option value="RL">RL</option>
+                <option value="CA">CA</option>
+                <option value="CR">CR</option>
+                <option value="FD">FD</option>
+                <option value="AI">AI</option>
+                <option value="JH">JH</option>
+                <option value="JM">JM</option>
+                <option value="JSA">JSA</option>
+                <option value="MA">MA</option>
+                <option value="MJ">MJ</option>
+                <option value="YF">YF</option>
+            </select>
+
+            <label for="spiThreshold">SPI Threshold:</label>
+            <select id="spiThreshold">
+                <option value="all">All Projects</option>
+                <option value="good">On Track (0.9-1.1)</option>
+                <option value="warning">Caution (0.8-0.9 or 1.1-1.2)</option>
+                <option value="critical">At Risk (Below 0.8 or Above 1.2)</option>
+            </select>
+
+            <label for="statusFilter">Filter by Status:</label>
+            <select id="statusFilter">
+                <option value="all">All Statuses</option>
+                <option value="En Progreso">En Progreso</option>
+                <option value="Stand By">Stand By</option>
+                <option value="Concluido">Concluido</option>
+            </select>
+
+            <label for="startDate">Start Date:</label>
+            <input type="date" id="startDate">
+
+            <label for="endDate">End Date:</label>
+            <input type="date" id="endDate">
+
+            <input type="text" id="searchProject" placeholder="Search Projects..." list="projectSuggestions">
+            <datalist id="projectSuggestions"></datalist>
+        </div>
+        <div>
+            <button id="exportBtn">📤 Export Data</button>
+            <button id="exportPdfBtn">📄 Export to PDF</button>
+            <button id="resetFilters">🔄 Reset Filters</button>
+            <button id="toggleDarkMode">🌙 Dark Mode</button>
+        </div>
+    </div>
+
+    <div class="kpi-section">
+        <div class="kpi-card">
+            <h3>Total Projects</h3>
+            <p id="totalProjects">0</p>
+        </div>
+        <div class="kpi-card">
+            <h3>Average SPI</h3>
+            <p id="averageSPI">0.00</p>
+        </div>
+        <div class="kpi-card">
+            <h3>On Track</h3>
+            <p id="onTrack">0</p>
+        </div>
+    </div>
+
+    <div class="dashboard">
+        <div class="card">
+            <h2>📈 SPI Trends</h2>
+            <div id="spiChartContainer">
+                <canvas id="spiChart"></canvas>
+            </div>
+        </div>
+        <div class="card">
+            <h2>📊 Progress Trends</h2>
+            <div id="progressChartContainer">
+                <canvas id="progressChart"></canvas>
+            </div>
+        </div>
+        <div class="card" style="grid-column: span 2;">
+            <h2>📅 Project SPI Overview</h2>
+            <table id="projectTable">
+                <thead>
+                    <tr>
+                        <th>Project Name</th>
+                        <th>PM</th>
+                        <th>SPI (Latest)</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+        <div class="card">
+            <div class="card">
+                <h2>📊 Project Status Distribution</h2>
+                <div id="pieChartContainer">
+                    <canvas id="pieChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>📅 Gantt Chart</h2>
+            <div id="ganttChartContainer">
+                <canvas id="ganttChart"></canvas>
+            </div>
+        </div>
+
+        <div id="loading">
+            <div class="loader"></div>
+        </div>
+
+        <script>
+            const projectsData = [{
+                    name: "Service Now (ITSM/SPM)",
+                    pm: "ARY",
+                    spi: 1.00,
+                    progress: [99, 99, 99, 99, 100],
+                    history: [1.0, 1.0, 1.0, 1.0, 1.0],
+                    status: "Concluido",
+                    plannedStartDate: "2025-01-01", // Fecha de inicio planificada
+                    plannedEndDate: "2025-03-01", // Fecha de fin planificada
+                    actualEndDate: "2025-02-28" // Fecha de fin real
+                },
+                {
+                    name: "Equipos de comunicaciones F5",
+                    pm: "ARY",
+                    spi: 1.0,
+                    progress: [81, 82, 82, 86, 91, 82],
+                    history: [1.0, 1.0, 1.0, 0.99, 0.99, 1.00],
+                    status: "En Progreso",
+                    plannedStartDate: "2025-01-20", // Fecha de inicio planificada
+                    plannedEndDate: "2025-03-01", // Fecha de fin planificada
+                    actualEndDate: "2025-02-28" // Fecha de fin real
+                },
+                {
+                    name: "Automarcaje mecánicos",
+                    pm: "AS",
+                    spi: null,
+                    history: null,
+                    status: "Stand By"
+                },
+                {
+                    name: "Upgrade Liferay",
+                    pm: "AS",
+                    spi: null,
+                    history: null,
+                    status: "Stand By"
+                },
+                {
+                    name: "Control de acceso vehicular",
+                    pm: "AS",
+                    spi: 1.00,
+                    progress: [95, 95, 96, 98, 100],
+                    history: [0.97, 0.98, 0.97, 1.0, 1.0],
+                    status: "Concluido"
+                },
+                {
+                    name: "Migración de Datacenter a AWS",
+                    pm: "RL",
+                    spi: 0.99,
+                    progress: [96, 96, 98, 98, 98, 98],
+                    history: [0.99, 0.97, 0.99, 0.99, 0.99, 0.99],
+                    status: "En Progreso"
+                },
+                {
+                    name: "AM - Nuevas marcas Kaiyi y Karry",
+                    pm: "CR",
+                    spi: 0.68,
+                    progress: [21, 29, 33, 39, 41, 52],
+                    history: [0.65, 0.78, 0.65, 0.66, 0.66, 0.68],
+                    status: "En Progreso"
+                },
+                {
+                    name: "Licitación Fábrica de SW",
+                    pm: "ARY",
+                    spi: 0.95,
+                    progress: [85, 87, 90, 90, 90, 91],
+                    history: [1.00, 1.00, 1.00, 0.95, 0.95, 0.95],
+                    status: "En Progreso"
+                },
+                {
+                    name: "Integración de agente de aduanas",
+                    pm: "CA",
+                    spi: 0.89,
+                    progress: [88, 88, 88, 88, 88, 88],
+                    history: [0.98, 0.99, 0.98, 0.98, 0.98, 0.89],
+                    status: "En Progreso"
+                },
+                {
+                    name: "Plexus - AM comercial",
+                    pm: "CR",
+                    spi: 0.73,
+                    progress: [42, 42, 42, 54, 66, 73],
+                    history: [0.43, 0.50, 0.43, 0.66, 0.66, 0.73],
+                    status: "En Progreso"
+                },
+                {
+                    name: "Upgrade NetWeaver 7.5 (EHP8, DBM 8.1)",
+                    pm: "CR",
+                    spi: 0.91,
+                    progress: [, , , , , ],
+                    history: [0.91, 0.91, 0.91, 0.91, 0.91, 0.91],
+                    status: "En Progreso"
+                },
+                {
+                    name: "Gestión de compras (Plexus)",
+                    pm: "CR",
+                    spi: 1.00,
+                    progress: [99, 100],
+                    history: [0.99, 1.00],
+                    status: "Concluido"
+                },
+                {
+                    name: "DC Nuevas tiendas repuestos (Juliaca y Huancayo)",
+                    pm: "CR",
+                    spi: 0.90,
+                    progress: [66, 66, 79, 82, 84, 84],
+                    history: [0.91, 0.90, 0.91, 0.90, 0.90, 0.90],
+                    status: "En Progreso"
+                },
+                {
+                    name: "Sucursal AM - Megacentro Lurin",
+                    pm: "CR",
+                    spi: 1.00,
+                    progress: [99, 100],
+                    history: [1.00, 1.00],
+                    status: "Concluido"
+                },
+                {
+                    name: "Sociedad Andes Motor Selva",
+                    pm: "CR",
+                    spi: 0.90,
+                    progress: [77, 77, 79, 82, 82, 90],
+                    history: [0.77, 0.77, 0.77, 0.82, 0.82, 0.90],
+                    status: "En Progreso"
+                },
+                {
+                    name: "Tableros de indicadores Post venta",
+                    pm: "FD",
+                    spi: 0.68,
+                    progress: [, , 41, 41, 48, 54],
+                    history: [, , 0.95, 0.69, 0.69, 0.68],
+                    status: "En Progreso"
+                },
+                {
+                    name: "Tablero de indicadores Logística",
+                    pm: "FD",
+                    spi: 1.00,
+                    progress: [, , 10, 10, 31, 21],
+                    history: [, , 1.67, 1.07, 1.07, 1.00],
+                    status: "En Progreso"
+                },
+                {
+                    name: "Sitio web Diverent",
+                    pm: "AI",
+                    spi: 0.79,
+                    progress: [79, 79, 79, 79, 79, 79],
+                    history: [0.79, 0.79, 0.79, 0.79, 0.79, 0.79],
+                    status: "En Progreso"
+                },
+                {
+                    name: "Mejoras Bonos",
+                    pm: "JH",
+                    spi: 0.92,
+                    progress: [, , 26, 45, 54, 60],
+                    history: [, , 1.00, 1.00, 0.95, 0.92],
+                    status: "En Progreso"
+                },
+                {
+                    name: "Prevención automatizada del fraude",
+                    pm: "JM",
+                    spi: 1.00,
+                    history: [1.00, 1.00, 1.00, 1.00, 1.00, 1.00],
+                    status: "En Progreso"
+                },
+                {
+                    name: "Seguimientos de leads (Rollout de KFM)",
+                    pm: "JSA",
+                    spi: 1.00,
+                    progress: [63, 63, 64, 66, 67, 67],
+                    history: [1.00, 1.00, 1.00, 1.00, 1.00, 1.00],
+                    status: "En Progreso"
+                },
+                {
+                    name: "Visión integral del Cliente",
+                    pm: "MA",
+                    spi: 1.00,
+                    progress: [78, 89, 94, 98, 100, 11],
+                    history: [0.99, 0.99, 1.00, 1.00, 1.00, 1.00],
+                    status: "En Progreso"
+                },
+                {
+                    name: "Migración CRM a SSC v2",
+                    pm: "MA",
+                    spi: 1.00,
+                    progress: [62, 65, 67, 69, 70, 72],
+                    history: [1.00, 1.00, 1.00, 0.99, 0.99, 1.00],
+                    status: "En Progreso"
+                },
+                {
+                    name: "Primera disposición de repuestos",
+                    pm: "MA",
+                    spi: 0.83,
+                    progress: [98, 100],
+                    history: [0.83, 0.83],
+                    status: "Concluido"
+                },
+                {
+                    name: "Pagos digitales - App to App",
+                    pm: "MA",
+                    spi: 0.95,
+                    progress: [27, 38, 41, 33, 38, 41],
+                    history: [1.00, 1.12, 0.98, 0.97, 0.97, 0.95],
+                    status: "En Progreso"
+                },
+                {
+                    name: "Cliente ++",
+                    pm: "MA",
+                    spi: 0.99,
+                    progress: [97, 100],
+                    history: [0.99, 0.99],
+                    status: "Stand By"
+                },
+                {
+                    name: "Experiencia del colaborador",
+                    pm: "MA",
+                    spi: 0.74,
+                    progress: [, , ],
+                    history: [0.74, 0.74],
+                    status: "Stand By"
+                },
+                {
+                    name: "Eleva - Preventa Contrato de mantenimiento",
+                    pm: "MJ",
+                    spi: 1.00,
+                    progress: [92, 92, 92, 82, 83, 84],
+                    history: [0.92, 0.92, 0.92, 1.00, 1.00, 1.00],
+                    status: "En Progreso"
+                },
+                {
+                    name: "Mejora de Calibraciones & herramientas",
+                    pm: "MJ",
+                    spi: null,
+                    progress: null,
+                    history: null,
+                    status: "Stand By"
+                },
+                {
+                    name: "Absorción de Legados",
+                    pm: "YF",
+                    spi: 1.00,
+                    progress: [88, 88, 88, 88, 88, 92],
+                    history: [1.00, 1.00, 1.00, 1.00, 1.00, 1.00],
+                    status: "En Progreso"
+                },
+                {
+                    name: "OTD - Order to Delivery",
+                    pm: "YF",
+                    spi: 0.99,
+                    progress: [85, 87, 87, 89, 90, 91],
+                    history: [0.97, 1.00, 0.97, 0.98, 0.98, 0.99],
+                    status: "En Progreso"
+                },
+                {
+                    name: "Tableros corporativos",
+                    pm: "YF",
+                    spi: 1.00,
+                    progress: [66, 68, 65, 67, 85, 79],
+                    history: [1.00, 1.00, 1.00, 1.00, 1.00],
+                    status: "En Progreso"
+                },
+                {
+                    name: "Migración de datos a nube (SAS/SAP a AWS)",
+                    pm: "YF",
+                    spi: 1.00,
+                    progress: [90, 92, 95, 96, 97, 98],
+                    history: [1.00, 1.00, 1.00, 1.00, 1.00, 1.00],
+                    status: "En Progreso"
+                },
+                {
+                    name: "Migración auxiliares BW/4 a modelo Chile",
+                    pm: "YF",
+                    spi: null,
+                    progress: null,
+                    history: null,
+                    status: "Stand By"
+                },
+                {
+                    name: "Iniciativas IA - Bot's MKT y PVTA (Aderezo)",
+                    pm: "MA",
+                    spi: 1.00,
+                    progress: [, , , 15, 25, 40],
+                    history: [, , , 1.00, 1.00, 1.00],
+                    status: "En Progreso"
+                },
+
+            ];
+
+            const dates = ['2025-01-02', '2025-01-09', '2025-01-16', '2025-01-23', '2025-01-30', '2025-02-06'];
+            let spiChart, progressChart, pieChart;
+
+            function getSPIStatus(spi) {
+                if (spi === null) return 'N/A';
+                if (spi >= 0.9 && spi <= 1.1) return 'good';
+                if ((spi >= 0.8 && spi < 0.9) || (spi > 1.1 && spi <= 1.2)) return 'warning';
+                if (spi < 0.8 || spi > 1.2) return 'critical';
+                return 'N/A';
+            }
+
+            function renderGanttChart(filteredProjects) {
+                const ganttCtx = document.getElementById('ganttChart').getContext('2d');
+
+                // Datos para el gráfico de Gantt
+                const ganttData = {
+                    labels: filteredProjects.map(project => project.name),
+                    datasets: [{
+                            label: 'Plazo Planificado',
+                            data: filteredProjects.map(project => ({
+                                x: new Date(project.plannedStartDate).getTime(),
+                                x2: new Date(project.plannedEndDate).getTime(),
+                                y: project.name
+                            })),
+                            backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                            borderColor: 'rgba(75, 192, 192, 1)',
+                            borderWidth: 1
+                        },
+                        {
+                            label: 'Fecha de Fin Real',
+                            data: filteredProjects
+                                .filter(project => project.actualEndDate) // Solo proyectos con fecha de fin real
+                                .map(project => ({
+                                    x: new Date(project.actualEndDate).getTime(),
+                                    y: project.name
+                                })),
+                            backgroundColor: 'rgba(255, 99, 132, 0.6)',
+                            borderColor: 'rgba(255, 99, 132, 1)',
+                            borderWidth: 1,
+                            type: 'line', // Usar un gráfico de líneas para superponer
+                            fill: false
+                        }
+                    ]
+                };
+
+                // Opciones del gráfico
+                const ganttOptions = {
+                    indexAxis: 'y', // Barras horizontales
+                    scales: {
+                        x: {
+                            type: 'time',
+                            time: {
+                                unit: 'day'
+                            },
+                            min: new Date('2025-01-01').getTime(), // Fecha mínima
+                            max: new Date('2025-12-31').getTime() // Fecha máxima
+                        }
+                    },
+                    plugins: {
+                        tooltip: {
+                            callbacks: {
+                                label: (context) => {
+                                    const datasetLabel = context.dataset.label || '';
+                                    const value = context.raw;
+                                    if (datasetLabel === 'Plazo Planificado') {
+                                        return `${datasetLabel}: ${new Date(value.x).toLocaleDateString()} - ${new Date(value.x2).toLocaleDateString()}`;
+                                    } else {
+                                        return `${datasetLabel}: ${new Date(value.x).toLocaleDateString()}`;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                };
+
+                // Renderizar el gráfico
+                new Chart(ganttCtx, {
+                    type: 'bar',
+                    data: ganttData,
+                    options: ganttOptions
+                });
+            }
+
+
+
+
+            function updateDashboard(selectedPM, spiThreshold, searchTerm, startDate, endDate, selectedStatus) {
+                showLoader();
+                let filteredProjects = projectsData;
+
+           
+
+            // Filter by Project Manager
+            if (selectedPM !== 'all') {
+                filteredProjects = filteredProjects.filter(project => project.pm === selectedPM);
+            }
+            
+            
+
+            // Filter by SPI Threshold
+            if (spiThreshold !== 'all') {
+                filteredProjects = filteredProjects.filter(project => {
+                    const status = getSPIStatus(project.spi);
+                    return status === spiThreshold;
+                });
+            }
+
+            // Filter by Status
+            if (selectedStatus !== 'all') {
+                filteredProjects = filteredProjects.filter(project => project.status === selectedStatus);
+            }
+
+            // Search Filter
+            if (searchTerm) {
+                filteredProjects = filteredProjects.filter(project =>
+                    project.name.toLowerCase().includes(searchTerm.toLowerCase())
+                );
+            }
+
+            
+
+            // Date Filter
+            if (startDate && endDate) {
+                filteredProjects = filteredProjects.filter(project => {
+                    const projectDate = new Date(project.date); // Ensure each project has a 'date' property
+                    return projectDate >= new Date(startDate) && projectDate <= new Date(endDate);
+                });
+            }
+
+            // Update Project Table
+            const tableBody = document.querySelector('#projectTable tbody');
+            tableBody.innerHTML = '';
+
+            filteredProjects.forEach(project => {
+                const row = tableBody.insertRow();
+                row.insertCell(0).textContent = project.name;
+                row.insertCell(1).textContent = project.pm;
+
+                const spiCell = row.insertCell(2);
+                spiCell.textContent = project.spi ? project.spi.toFixed(2) : 'N/A';
+
+                const statusCell = row.insertCell(3);
+                const statusSpan = document.createElement('span');
+                statusSpan.classList.add('spi-status', `spi-${getSPIStatus(project.spi)}`);
+                statusSpan.textContent = getSPIStatus(project.spi).toUpperCase();
+                statusCell.appendChild(statusSpan);
+            });
+
+            // Update SPI Chart
+            if (spiChart) {
+                spiChart.destroy();
+            }
+            
+            
+            
+            const spiDatasets = filteredProjects
+                .filter(project => project.history !== null)
+                .map((project, index) => ({
+                    label: project.name,
+                    data: project.history,
+                    borderColor: getColor(index),
+                    fill: false,
+                    tension: 0.1
+                }));
+
+            const spiCtx = document.getElementById('spiChart').getContext('2d');
+            spiChart = new Chart(spiCtx, {
+                type: 'line',
+                data: {
+                    labels: dates,
+                    datasets: spiDatasets
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                boxWidth: 12
+                            }
+                        },
+                        annotation: {
+                            annotations: {
+                                line1: {
+                                    type: 'line',
+                                    yMin: 0.9,
+                                    yMax: 0.9,
+                                    borderColor: 'rgba(255, 0, 0, 0.5)',
+                                    borderWidth: 2,
+                                    borderDash: [5, 5],
+                                    label: {
+                                        content: '',
+                                        enabled: true
+                                    }
+                                },
+                                line2: {
+                                    type: 'line',
+                                    yMin: 1.1,
+                                    yMax: 1.1,
+                                    borderColor: 'rgba(255, 0, 0, 0.5)',
+                                    borderWidth: 2,
+                                    borderDash: [5, 5],
+                                    label: {
+                                        content: '',
+                                        enabled: true
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: false,
+                            suggestedMin: 0.6,
+                            suggestedMax: 1.2,
+                            grid: {
+                                color: 'rgba(0, 0, 0, 0.1)'
+                            }
+                        },
+                        x: {
+                            grid: {
+                                color: 'rgba(0, 0, 0, 0.1)'
+                            }
+                        }
+                    }
+                }
+            });
+
+            // Update Progress Chart
+            if (progressChart) {
+                progressChart.destroy();
+            }
+
+            const progressDatasets = filteredProjects
+                .filter(project => project.progress !== null)
+                .map((project, index) => ({
+                    label: project.name,
+                    data: project.progress,
+                    borderColor: getColor(index),
+                    fill: false,
+                    tension: 0.1
+                }));
+
+            const progressCtx = document.getElementById('progressChart').getContext('2d');
+            progressChart = new Chart(progressCtx, {
+                type: 'line',
+                data: {
+                    labels: dates,
+                    datasets: progressDatasets
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                boxWidth: 12
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            suggestedMax: 100,
+                            grid: {
+                                color: 'rgba(0, 0, 0, 0.1)'
+                            }
+                        },
+                        x: {
+                            grid: {
+                                color: 'rgba(0, 0, 0, 0.1)'
+                            }
+                        }
+                    }
+                }
+            });
+
+            // Update Pie Chart
+            if (pieChart) {
+                pieChart.destroy();
+            }
+
+            const pieChartCtx = document.getElementById('pieChart').getContext('2d');
+            const goodProjects = filteredProjects.filter(p => getSPIStatus(p.spi) === 'good').length;
+            const warningProjects = filteredProjects.filter(p => getSPIStatus(p.spi) === 'warning').length;
+            const criticalProjects = filteredProjects.filter(p => getSPIStatus(p.spi) === 'critical').length;
+
+            pieChart = new Chart(pieChartCtx, {
+                type: 'pie',
+                data: {
+                    labels: ['On Track', 'Caution', 'At Risk'],
+                    datasets: [{
+                        data: [goodProjects, warningProjects, criticalProjects],
+                        backgroundColor: ['#4CAF50', '#FFC107', '#F44336']
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false
+                }
+            });
+
+            // Update KPIs
+            updateKPIs(filteredProjects);
+
+            // Hide loader
+            setTimeout(() => {
+                hideLoader();
+            }, 1000);
+            }
+
+            function updateKPIs(projects) {
+                const totalProjects = projects.length;
+                const projectsWithSPI = projects.filter(p => p.spi !== null);
+                const avgSPI = projectsWithSPI.length > 0 ?
+                    (projectsWithSPI.reduce((acc, curr) => acc + curr.spi, 0) / projectsWithSPI.length).toFixed(2) :
+                    'N/A';
+                const onTrack = projectsWithSPI.filter(p => getSPIStatus(p.spi) === 'good').length;
+
+                document.getElementById('totalProjects').textContent = totalProjects;
+                document.getElementById('averageSPI').textContent = avgSPI;
+                document.getElementById('onTrack').textContent = onTrack;
+            }
+
+            function getColor(index) {
+                const colors = ['#3498db', '#2ecc71', '#e74c3c', '#f39c12', '#9b59b6', '#1abc9c', '#34495e', '#e67e22', '#16a085', '#c0392b'];
+                return colors[index % colors.length];
+            }
+
+            function exportData() {
+                const csvContent = "data:text/csv;charset=utf-8," + ["Project Name", "Project Manager", "SPI", "Status"].join(",") + "\n" +
+                    projectsData.map(p =>
+                        `"${p.name}","${p.pm}","${p.spi || 'N/A'}","${getSPIStatus(p.spi)}"`
+                    ).join("\n");
+
+                const encodedUri = encodeURI(csvContent);
+                const link = document.createElement("a");
+                link.setAttribute("href", encodedUri);
+                link.setAttribute("download", `project_portfolio_spi_${new Date().toISOString().split('T')[0]}.csv`);
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            }
+
+            function exportToPdf() {
+                const element = document.body;
+                html2pdf(element);
+            }
+
+            function showLoader() {
+                document.getElementById('loading').style.display = 'block';
+            }
+
+            function hideLoader() {
+                document.getElementById('loading').style.display = 'none';
+            }
+
+            // Event Listeners
+            document.getElementById('pmFilter').addEventListener('change', () => {
+                updateDashboard(
+                    document.getElementById('pmFilter').value,
+                    document.getElementById('spiThreshold').value,
+                    document.getElementById('searchProject').value,
+                    document.getElementById('startDate').value,
+                    document.getElementById('endDate').value,
+                    document.getElementById('statusFilter').value
+                );
+            });
+
+            document.getElementById('spiThreshold').addEventListener('change', () => {
+                updateDashboard(
+                    document.getElementById('pmFilter').value,
+                    document.getElementById('spiThreshold').value,
+                    document.getElementById('searchProject').value,
+                    document.getElementById('startDate').value,
+                    document.getElementById('endDate').value,
+                    document.getElementById('statusFilter').value
+                );
+            });
+
+            document.getElementById('searchProject').addEventListener('input', (e) => {
+                const searchTerm = e.target.value.toLowerCase();
+                const suggestions = projectsData
+                    .filter(project => project.name.toLowerCase().includes(searchTerm))
+                    .map(project => `<option value="${project.name}">`);
+                document.getElementById('projectSuggestions').innerHTML = suggestions.join('');
+
+                updateDashboard(
+                    document.getElementById('pmFilter').value,
+                    document.getElementById('spiThreshold').value,
+                    searchTerm,
+                    document.getElementById('startDate').value,
+                    document.getElementById('endDate').value,
+                    document.getElementById('statusFilter').value
+                );
+            });
+
+            document.getElementById('startDate').addEventListener('change', () => {
+                updateDashboard(
+                    document.getElementById('pmFilter').value,
+                    document.getElementById('spiThreshold').value,
+                    document.getElementById('searchProject').value,
+                    document.getElementById('startDate').value,
+                    document.getElementById('endDate').value,
+                    document.getElementById('statusFilter').value
+                );
+            });
+
+            document.getElementById('endDate').addEventListener('change', () => {
+                updateDashboard(
+                    document.getElementById('pmFilter').value,
+                    document.getElementById('spiThreshold').value,
+                    document.getElementById('searchProject').value,
+                    document.getElementById('startDate').value,
+                    document.getElementById('endDate').value,
+                    document.getElementById('statusFilter').value
+                );
+            });
+
+            document.getElementById('statusFilter').addEventListener('change', () => {
+                updateDashboard(
+                    document.getElementById('pmFilter').value,
+                    document.getElementById('spiThreshold').value,
+                    document.getElementById('searchProject').value,
+                    document.getElementById('startDate').value,
+                    document.getElementById('endDate').value,
+                    document.getElementById('statusFilter').value
+                );
+            });
+
+            document.getElementById('exportBtn').addEventListener('click', exportData);
+            document.getElementById('exportPdfBtn').addEventListener('click', exportToPdf);
+            document.getElementById('resetFilters').addEventListener('click', () => {
+                document.getElementById('pmFilter').value = 'all';
+                document.getElementById('spiThreshold').value = 'all';
+                document.getElementById('searchProject').value = '';
+                document.getElementById('startDate').value = '';
+                document.getElementById('endDate').value = '';
+                document.getElementById('statusFilter').value = 'all';
+                updateDashboard('all', 'all', '', '', '', 'all');
+            });
+
+            document.getElementById('toggleDarkMode').addEventListener('click', () => {
+                document.body.classList.toggle('dark-mode');
+            });
+
+            // Initialize dashboard
+            document.addEventListener('DOMContentLoaded', () => {
+                updateDashboard('all', 'all', '', '', '', 'all');
+            });
+        </script>
+</body>
+</html>
